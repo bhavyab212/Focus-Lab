@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Plus,
@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Sparkles,
   BarChart3,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,13 +38,50 @@ import {
 } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn, generateId, formatDateISO, isSameDay, calculateStreak } from "@/lib/utils"
-import { type Habit, DAYS_OF_WEEK, DEFAULT_HABITS, HABIT_ICONS } from "@/lib/types"
+import { type Habit, DAYS_OF_WEEK, DEFAULT_HABITS, HABIT_ICONS, HABIT_ICONS_CATEGORIZED } from "@/lib/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { Confetti } from "@/components/ui/confetti"
 import { HabitAnalytics } from "./habit-analytics"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 interface HabitTrackerProps {
   weekDates: Date[]
+}
+
+function SortableHabitItem({ id, children }: { id: string; children: (listeners: any) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1 : "auto",
+    position: "relative" as const,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children(listeners)}
+    </div>
+  )
 }
 
 export function HabitTracker({ weekDates }: HabitTrackerProps) {
@@ -54,6 +92,7 @@ export function HabitTracker({ weekDates }: HabitTrackerProps) {
       name: h.name,
       icon: h.icon,
       completedDays: {},
+      failedDays: {},
       createdAt: new Date().toISOString(),
       currentStreak: 0,
       longestStreak: 0,
@@ -69,17 +108,102 @@ export function HabitTracker({ weekDates }: HabitTrackerProps) {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [selectedHabitForAnalytics, setSelectedHabitForAnalytics] = useState<Habit | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  const handleDragStart = (event: DragEndEvent) => {
+    setActiveId(event.active.id as string)
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      setHabits((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id)
+        const newIndex = items.findIndex((item) => item.id === over.id)
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+    setActiveId(null)
+  }
+
+  // Auto-fail habits older than 1 day that aren't completed
+  const autoFailOldHabits = useCallback(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    setHabits((prev) =>
+      prev.map((habit) => {
+        const newFailedDays = { ...(habit.failedDays || {}) }
+        let changed = false
+
+        // Check each day in the past week
+        for (let i = 1; i <= 7; i++) {
+          const checkDate = new Date(today)
+          checkDate.setDate(checkDate.getDate() - i)
+          const dateKey = formatDateISO(checkDate)
+
+          // If not completed and not already failed, mark as failed
+          if (!habit.completedDays[dateKey] && !newFailedDays[dateKey]) {
+            newFailedDays[dateKey] = true
+            changed = true
+          }
+        }
+
+        return changed ? { ...habit, failedDays: newFailedDays } : habit
+      }),
+    )
+  }, [setHabits])
+
+  // Run auto-fail check on mount and when habits change
+  useEffect(() => {
+    if (isLoaded) {
+      autoFailOldHabits()
+    }
+  }, [isLoaded, autoFailOldHabits])
 
   const toggleHabitDay = useCallback(
     (habitId: string, date: Date) => {
       const dateKey = formatDateISO(date)
+
       setHabits((prev) =>
         prev.map((habit) => {
           if (habit.id !== habitId) return habit
 
+          // Don't allow changes to failed days
+          if (habit.failedDays?.[dateKey]) {
+            return habit
+          }
+
+          // Check if this is editable (current day, yesterday, day before yesterday only)
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const checkDate = new Date(date)
+          checkDate.setHours(0, 0, 0, 0)
+          const daysDiff = Math.floor((today.getTime() - checkDate.getTime()) / (1000 * 60 * 60 * 24))
+
+          // Only allow editing if it's today (0), yesterday (1), or day before yesterday (2)
+          // Block future days (negative) and days older than 2 days ago
+          if (daysDiff < 0 || daysDiff > 2) {
+            return habit
+          }
+
           const newCompletedDays = {
             ...habit.completedDays,
             [dateKey]: !habit.completedDays[dateKey],
+          }
+
+          // If uncompleting, also remove from failed
+          const newFailedDays = { ...habit.failedDays }
+          if (!newCompletedDays[dateKey]) {
+            delete newFailedDays[dateKey]
           }
 
           const isNowCompleted = newCompletedDays[dateKey]
@@ -95,8 +219,47 @@ export function HabitTracker({ weekDates }: HabitTrackerProps) {
           return {
             ...habit,
             completedDays: newCompletedDays,
+            failedDays: newFailedDays,
             currentStreak: streakInfo.current,
             longestStreak: Math.max(habit.longestStreak, streakInfo.longest),
+            totalCompletions,
+          }
+        }),
+      )
+    },
+    [setHabits],
+  )
+
+  const toggleFailedDay = useCallback(
+    (habitId: string, date: Date) => {
+      const dateKey = formatDateISO(date)
+
+      setHabits((prev) =>
+        prev.map((habit) => {
+          if (habit.id !== habitId) return habit
+
+          // Don't allow un-failing
+          if (habit.failedDays?.[dateKey]) {
+            return habit
+          }
+
+          const newFailedDays = {
+            ...habit.failedDays,
+            [dateKey]: true,
+          }
+
+          // Remove from completed if marking as failed
+          const newCompletedDays = { ...habit.completedDays }
+          delete newCompletedDays[dateKey]
+
+          const streakInfo = calculateStreak(newCompletedDays)
+          const totalCompletions = Object.values(newCompletedDays).filter(Boolean).length
+
+          return {
+            ...habit,
+            completedDays: newCompletedDays,
+            failedDays: newFailedDays,
+            currentStreak: streakInfo.current,
             totalCompletions,
           }
         }),
@@ -114,6 +277,7 @@ export function HabitTracker({ weekDates }: HabitTrackerProps) {
           name: newHabit.trim(),
           icon: newHabitIcon,
           completedDays: {},
+          failedDays: {},
           createdAt: new Date().toISOString(),
           currentStreak: 0,
           longestStreak: 0,
@@ -281,148 +445,220 @@ export function HabitTracker({ weekDates }: HabitTrackerProps) {
             </div>
 
             {/* Habits Grid */}
-            <div className="divide-y max-h-[400px] overflow-y-auto">
-              <AnimatePresence>
-                {habits.map((habit, habitIndex) => {
-                  const progress = calculateProgress(habit)
-                  const hasStreak = habit.currentStreak > 0
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="divide-y max-h-[400px] overflow-y-auto">
+                <SortableContext items={habits.map((h) => h.id)} strategy={verticalListSortingStrategy}>
+                  <AnimatePresence>
+                    {habits.map((habit, habitIndex) => {
+                      const progress = calculateProgress(habit)
+                      const hasStreak = habit.currentStreak > 0
 
-                  return (
-                    <motion.div
-                      key={habit.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.3, delay: habitIndex * 0.05 }}
-                      className="grid grid-cols-[1fr_repeat(7,minmax(36px,44px))_70px] gap-1 px-5 py-3 items-center group hover:bg-muted/20 transition-colors"
-                    >
-                      {/* Habit Name */}
-                      <div className="flex items-center gap-2 min-w-0">
-                        <GripVertical className="w-4 h-4 text-muted-foreground/20 opacity-0 group-hover:opacity-100 cursor-grab shrink-0 transition-opacity" />
-                        {habit.icon && <span className="text-base shrink-0">{habit.icon}</span>}
-                        {editingId === habit.id ? (
-                          <Input
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            onBlur={() => updateHabitName(habit.id)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") updateHabitName(habit.id)
-                              if (e.key === "Escape") {
-                                setEditingId(null)
-                                setEditingName("")
-                              }
-                            }}
-                            className="h-7 text-sm py-0 px-2"
-                            autoFocus
-                          />
-                        ) : (
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-sm font-medium truncate">{habit.name}</span>
-                            {hasStreak && (
-                              <motion.span
-                                className="flex items-center gap-0.5 text-xs text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded-full shrink-0"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                              >
-                                <Flame className="w-3 h-3" />
-                                {habit.currentStreak}
-                              </motion.span>
-                            )}
-                          </div>
-                        )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted rounded transition-opacity shrink-0">
-                              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-40">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedHabitForAnalytics(habit)
-                                setShowAnalytics(true)
-                              }}
-                            >
-                              <BarChart3 className="w-4 h-4 mr-2" />
-                              View Stats
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setEditingId(habit.id)
-                                setEditingName(habit.name)
-                              }}
-                            >
-                              <Pencil className="w-4 h-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => removeHabit(habit.id)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {/* Day Checkboxes */}
-                      {weekDates.map((date, dayIndex) => {
-                        const dateKey = formatDateISO(date)
-                        const isChecked = habit.completedDays[dateKey] || false
-                        const isToday = dayIndex === todayIndex
-
-                        return (
-                          <div key={dateKey} className="flex justify-center">
+                      return (
+                        <SortableHabitItem key={habit.id} id={habit.id}>
+                          {(listeners) => (
                             <motion.div
-                              whileTap={{ scale: 0.9 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 20 }}
+                              transition={{ duration: 0.3, delay: habitIndex * 0.05 }}
+                              className="grid grid-cols-[1fr_repeat(7,minmax(36px,44px))_70px] gap-1 px-5 py-3 items-center group hover:bg-muted/20 transition-colors"
                             >
-                              <Checkbox
-                                checked={isChecked}
-                                onCheckedChange={() => toggleHabitDay(habit.id, date)}
-                                className={cn(
-                                  "w-6 h-6 rounded-md border-2 transition-all duration-200",
-                                  isChecked
-                                    ? "bg-primary border-primary data-[state=checked]:bg-primary shadow-sm"
-                                    : isToday
-                                      ? "border-primary/50 hover:border-primary hover:bg-primary/5"
-                                      : "border-muted-foreground/20 hover:border-primary/30 hover:bg-muted/50",
+                              {/* Habit Name */}
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div
+                                  {...listeners}
+                                  className="cursor-grab opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-1 hover:bg-muted rounded touch-none"
+                                >
+                                  <GripVertical className="w-4 h-4 text-muted-foreground/50" />
+                                </div>
+                                {habit.icon && <span className="text-base shrink-0">{habit.icon}</span>}
+                                {editingId === habit.id ? (
+                                  <Input
+                                    value={editingName}
+                                    onChange={(e) => setEditingName(e.target.value)}
+                                    onBlur={() => updateHabitName(habit.id)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") updateHabitName(habit.id)
+                                      if (e.key === "Escape") {
+                                        setEditingId(null)
+                                        setEditingName("")
+                                      }
+                                    }}
+                                    className="h-7 text-sm py-0 px-2"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-sm font-medium truncate">{habit.name}</span>
+                                    {hasStreak && (
+                                      <motion.span
+                                        className="flex items-center gap-0.5 text-xs text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded-full shrink-0"
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                      >
+                                        <Flame className="w-3 h-3" />
+                                        {habit.currentStreak}
+                                      </motion.span>
+                                    )}
+                                  </div>
                                 )}
-                              />
-                            </motion.div>
-                          </div>
-                        )
-                      })}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted rounded transition-opacity shrink-0">
+                                      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="start" className="w-40">
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedHabitForAnalytics(habit)
+                                        setShowAnalytics(true)
+                                      }}
+                                    >
+                                      <BarChart3 className="w-4 h-4 mr-2" />
+                                      View Stats
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setEditingId(habit.id)
+                                        setEditingName(habit.name)
+                                      }}
+                                    >
+                                      <Pencil className="w-4 h-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => removeHabit(habit.id)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
 
-                      {/* Progress */}
-                      <div className="text-center">
-                        <motion.span
-                          className={cn(
-                            "text-xs font-bold px-2.5 py-1 rounded-full inline-block min-w-[48px]",
-                            progress >= 70
-                              ? "bg-primary/15 text-primary"
-                              : progress >= 40
-                                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                                : progress > 0
-                                  ? "bg-orange-500/15 text-orange-600 dark:text-orange-400"
-                                  : "bg-muted text-muted-foreground",
+                              {/* Day Checkboxes */}
+                              {weekDates.map((date, dayIndex) => {
+                                const dateKey = formatDateISO(date)
+                                const isChecked = habit.completedDays[dateKey] || false
+                                const isFailed = habit.failedDays?.[dateKey] || false
+                                const isToday = dayIndex === todayIndex
+
+                                // Calculate if this date is editable (current day and day before yesterday only)
+                                const today = new Date()
+                                today.setHours(0, 0, 0, 0)
+                                const checkDate = new Date(date)
+                                checkDate.setHours(0, 0, 0, 0)
+                                const daysDiff = Math.floor((today.getTime() - checkDate.getTime()) / (1000 * 60 * 60 * 24))
+                                // Only editable if: today (0), yesterday (1), or day before yesterday (2)
+                                // NOT future days (negative daysDiff) or days older than 2 days ago
+                                const isEditable = daysDiff >= 0 && daysDiff <= 2
+
+                                return (
+                                  <div key={dateKey} className="flex justify-center">
+                                    <motion.div
+                                      whileTap={{ scale: isEditable ? 0.9 : 1 }}
+                                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                      onContextMenu={(e) => {
+                                        e.preventDefault()
+                                        if (isEditable && !isFailed) {
+                                          toggleFailedDay(habit.id, date)
+                                        }
+                                      }}
+                                      title={
+                                        !isEditable
+                                          ? daysDiff < 0
+                                            ? "Future day (cannot edit)"
+                                            : "Locked (too old to edit)"
+                                          : isFailed
+                                            ? "Failed (locked)"
+                                            : isChecked
+                                              ? "Completed - Right click to fail"
+                                              : "Not completed - Click to complete, right click to fail"
+                                      }
+                                    >
+                                      <div className="relative">
+                                        <Checkbox
+                                          checked={isChecked || isFailed}
+                                          onCheckedChange={() => isEditable && toggleHabitDay(habit.id, date)}
+                                          disabled={!isEditable || isFailed}
+                                          className={cn(
+                                            "w-6 h-6 rounded-md border-2 transition-all duration-200",
+                                            !isEditable
+                                              ? "cursor-not-allowed opacity-50 bg-muted border-muted"
+                                              : isFailed
+                                                ? "bg-rose-700 border-rose-700 data-[state=checked]:bg-rose-700 cursor-not-allowed shadow-md"
+                                                : isChecked
+                                                  ? "bg-lime-600 border-lime-600 data-[state=checked]:bg-lime-600 shadow-md"
+                                                  : isToday
+                                                    ? "border-primary/50 hover:border-primary hover:bg-primary/5"
+                                                    : "border-muted-foreground/20 hover:border-primary/30 hover:bg-muted/50",
+                                          )}
+                                        />
+                                        {isFailed && (
+                                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                            <svg className="w-3.5 h-3.5 stroke-2" viewBox="0 0 16 16" fill="none">
+                                              <path
+                                                d="M2 2L14 14M14 2L2 14"
+                                                stroke="white"
+                                                strokeWidth="2.5"
+                                                strokeLinecap="round"
+                                              />
+                                            </svg>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </motion.div>
+                                  </div>
+                                )
+                              })}
+
+                              {/* Progress */}
+                              <div className="text-center">
+                                <motion.span
+                                  className={cn(
+                                    "text-xs font-bold px-2.5 py-1 rounded-full inline-block min-w-[48px]",
+                                    progress >= 70
+                                      ? "bg-primary/15 text-primary"
+                                      : progress >= 40
+                                        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                                        : progress > 0
+                                          ? "bg-orange-500/15 text-orange-600 dark:text-orange-400"
+                                          : "bg-muted text-muted-foreground",
+                                  )}
+                                  key={progress}
+                                  initial={{ scale: 1.2 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                >
+                                  {progress}%
+                                </motion.span>
+                              </div>
+                            </motion.div>
                           )}
-                          key={progress}
-                          initial={{ scale: 1.2 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        >
-                          {progress}%
-                        </motion.span>
-                      </div>
-                    </motion.div>
-                  )
-                })}
-              </AnimatePresence>
-            </div>
+                        </SortableHabitItem>
+                      )
+                    })}
+                  </AnimatePresence>
+                </SortableContext>
+              </div>
+              <DragOverlay>
+                {activeId ? (
+                  <div className="bg-background border rounded-md p-4 shadow-xl opacity-90 w-[300px] flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">Moving habit...</span>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
 
             {/* Add Habit */}
             <div className="p-4 border-t bg-muted/10">
@@ -438,19 +674,30 @@ export function HabitTracker({ weekDates }: HabitTrackerProps) {
                         {newHabitIcon}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-64 p-3" align="start">
-                      <div className="grid grid-cols-6 gap-2">
-                        {HABIT_ICONS.map((icon) => (
-                          <button
-                            key={icon}
-                            onClick={() => setNewHabitIcon(icon)}
-                            className={cn(
-                              "w-9 h-9 text-lg rounded-lg hover:bg-muted transition-colors flex items-center justify-center",
-                              newHabitIcon === icon && "bg-primary/10 ring-2 ring-primary",
-                            )}
-                          >
-                            {icon}
-                          </button>
+                    <PopoverContent className="w-80 p-0" align="start" side="top" sideOffset={8}>
+                      <div className="p-3 border-b bg-muted/30">
+                        <h4 className="font-semibold text-sm">Choose an Icon</h4>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {Object.entries(HABIT_ICONS_CATEGORIZED).map(([category, icons]) => (
+                          <div key={category} className="p-3 border-b last:border-b-0">
+                            <h5 className="text-xs font-medium text-muted-foreground mb-2">{category}</h5>
+                            <div className="grid grid-cols-8 gap-1">
+                              {icons.map((icon) => (
+                                <button
+                                  key={icon}
+                                  onClick={() => setNewHabitIcon(icon)}
+                                  className={cn(
+                                    "w-8 h-8 text-lg rounded-md hover:bg-muted transition-colors flex items-center justify-center",
+                                    newHabitIcon === icon && "bg-primary/10 ring-2 ring-primary",
+                                  )}
+                                  title={icon}
+                                >
+                                  {icon}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </PopoverContent>

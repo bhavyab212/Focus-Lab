@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Trophy, Lock, CheckCircle } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import type { Achievement, Habit, PomodoroSession } from "@/lib/types"
@@ -207,6 +207,10 @@ export function AchievementSystem({ habits, pomodoroSessions = [] }: Achievement
         {showUnlockDialog && newlyUnlocked && (
           <Dialog open={showUnlockDialog} onOpenChange={setShowUnlockDialog}>
             <DialogContent className="sm:max-w-sm">
+              <DialogHeader className="sr-only">
+                <DialogTitle>Achievement Unlocked</DialogTitle>
+                <DialogDescription>You have unlocked the {newlyUnlocked.name} achievement</DialogDescription>
+              </DialogHeader>
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -242,6 +246,9 @@ export function AchievementSystem({ habits, pomodoroSessions = [] }: Achievement
                 {unlockedCount} of {totalCount} unlocked
               </span>
             </DialogTitle>
+            <DialogDescription>
+              View your progress and unlocked achievements
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 mt-4">
             {calculatedAchievements.map((achievement) => (

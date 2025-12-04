@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { DayColumn } from "./day-column"
 import { WeeklyStats } from "./weekly-stats"
 import { QuoteSection } from "./quote-section"
-import { HabitTracker } from "@/components/habit-tracker/habit-tracker"
 import { type Task, DAYS_OF_WEEK, MOTIVATIONAL_QUOTES } from "@/lib/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { formatDate, getWeekDates, getStartOfWeek, generateId, formatDateISO, getRandomQuote } from "@/lib/utils"
@@ -82,6 +81,7 @@ export function WeeklyPlanner() {
       id: generateId(),
       title,
       completed: false,
+      failed: false,
       dueDate: dateKey,
       priority: taskData?.priority || "medium",
       status: "not-started",
@@ -153,10 +153,10 @@ export function WeeklyPlanner() {
       [dateKey]: (prev[dateKey] || []).map((t) =>
         t.id === taskId
           ? {
-              ...t,
-              ...updates,
-              completedAt: updates.completed ? new Date().toISOString() : undefined,
-            }
+            ...t,
+            ...updates,
+            completedAt: updates.completed ? new Date().toISOString() : undefined,
+          }
           : t,
       ),
     }))
@@ -284,24 +284,92 @@ export function WeeklyPlanner() {
             </div>
           </div>
 
-          {/* Habit Tracker */}
-          <HabitTracker weekDates={weekDates} />
-
           {/* Day Columns with drag hint */}
           <div className="text-xs text-muted-foreground text-center mb-2">Drag tasks between days to reschedule</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-            {weekDates.map((date, index) => (
-              <DayColumn
-                key={date.toISOString()}
-                date={date}
-                dayName={DAYS_OF_WEEK[index]}
-                tasks={getDayTasks(index)}
-                onAddTask={(title, taskData) => addTask(index, title, taskData)}
-                onUpdateTask={(taskId, updates) => updateTask(index, taskId, updates)}
-                onRemoveTask={(taskId) => removeTask(index, taskId)}
-                onMoveTask={moveTask}
-              />
-            ))}
+
+          {/* Dynamic 2-row layout */}
+          <div className="space-y-4">
+            {(() => {
+              // Find today's index in the week
+              const todayIndex = weekDates.findIndex((date) => {
+                const today = new Date()
+                return date.getDate() === today.getDate() &&
+                  date.getMonth() === today.getMonth() &&
+                  date.getFullYear() === today.getFullYear()
+              })
+
+              // If today is found in the current week
+              if (todayIndex !== -1) {
+                const yesterdayIndex = todayIndex - 1
+                const tomorrowIndex = todayIndex + 1
+
+                // First row: Yesterday, Today, Tomorrow (if they exist)
+                const firstRowIndices: number[] = []
+                if (yesterdayIndex >= 0) firstRowIndices.push(yesterdayIndex)
+                firstRowIndices.push(todayIndex)
+                if (tomorrowIndex < 7) firstRowIndices.push(tomorrowIndex)
+
+                // Second row: All other days
+                const secondRowIndices = weekDates
+                  .map((_, index) => index)
+                  .filter((index) => !firstRowIndices.includes(index))
+
+                return (
+                  <>
+                    {/* First Row: Yesterday | Today | Tomorrow */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center">
+                      {firstRowIndices.map((index) => (
+                        <div key={index} className="w-full max-w-[400px]">
+                          <DayColumn
+                            date={weekDates[index]}
+                            dayName={DAYS_OF_WEEK[index]}
+                            tasks={getDayTasks(index)}
+                            onAddTask={(title, taskData) => addTask(index, title, taskData)}
+                            onUpdateTask={(taskId, updates) => updateTask(index, taskId, updates)}
+                            onRemoveTask={(taskId) => removeTask(index, taskId)}
+                            onMoveTask={moveTask}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Second Row: Remaining 4 days */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {secondRowIndices.map((index) => (
+                        <DayColumn
+                          key={index}
+                          date={weekDates[index]}
+                          dayName={DAYS_OF_WEEK[index]}
+                          tasks={getDayTasks(index)}
+                          onAddTask={(title, taskData) => addTask(index, title, taskData)}
+                          onUpdateTask={(taskId, updates) => updateTask(index, taskId, updates)}
+                          onRemoveTask={(taskId) => removeTask(index, taskId)}
+                          onMoveTask={moveTask}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )
+              } else {
+                // Fallback: If today is not in the current week, show all 7 days in rows
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+                    {weekDates.map((date, index) => (
+                      <DayColumn
+                        key={date.toISOString()}
+                        date={date}
+                        dayName={DAYS_OF_WEEK[index]}
+                        tasks={getDayTasks(index)}
+                        onAddTask={(title, taskData) => addTask(index, title, taskData)}
+                        onUpdateTask={(taskId, updates) => updateTask(index, taskId, updates)}
+                        onRemoveTask={(taskId) => removeTask(index, taskId)}
+                        onMoveTask={moveTask}
+                      />
+                    ))}
+                  </div>
+                )
+              }
+            })()}
           </div>
         </main>
       </div>

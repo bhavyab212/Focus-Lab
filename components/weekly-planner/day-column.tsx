@@ -270,7 +270,7 @@ export function DayColumn({ date, dayName, tasks, onAddTask, onUpdateTask, onRem
 
       {/* Tasks List */}
       {!isCollapsed && (
-        <div className="flex-1 p-2 space-y-1 min-h-[180px] max-h-[350px] overflow-y-auto">
+        <div className="flex-1 p-2 space-y-2 min-h-[180px] max-h-[350px] overflow-y-auto">
           {sortedTasks.map((task) => (
             <div
               key={task.id}
@@ -278,7 +278,7 @@ export function DayColumn({ date, dayName, tasks, onAddTask, onUpdateTask, onRem
               onDragStart={(e) => handleDragStart(e, task)}
               onDragEnd={handleDragEnd}
               className={cn(
-                "flex items-start gap-2 p-2 rounded-lg border-l-2 group transition-all cursor-grab active:cursor-grabbing",
+                "flex items-start gap-2 p-3 rounded-lg border-l-2 group transition-all cursor-grab active:cursor-grabbing",
                 getPriorityColor(task.priority),
                 task.completed ? "bg-primary/5 hover:bg-primary/10" : "bg-muted/30 hover:bg-muted/50",
                 draggedTaskId === task.id && "opacity-50",
@@ -292,7 +292,7 @@ export function DayColumn({ date, dayName, tasks, onAddTask, onUpdateTask, onRem
                 checked={task.completed}
                 onCheckedChange={() => toggleTaskComplete(task)}
                 className={cn(
-                  "mt-0.5 rounded-sm transition-all",
+                  "mt-0.5 rounded-sm transition-all shrink-0",
                   task.completed && "bg-primary border-primary data-[state=checked]:bg-primary",
                 )}
               />
@@ -316,14 +316,14 @@ export function DayColumn({ date, dayName, tasks, onAddTask, onUpdateTask, onRem
                 <div className="flex-1 min-w-0">
                   <span
                     className={cn(
-                      "text-sm leading-tight cursor-pointer block truncate",
+                      "text-sm leading-relaxed cursor-pointer block break-words",
                       task.completed && "line-through text-muted-foreground",
                     )}
                     onDoubleClick={() => startEditing(task)}
                   >
                     {task.title}
                   </span>
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {task.startTime && (
                       <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                         <Clock className="w-2.5 h-2.5" />

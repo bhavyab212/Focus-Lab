@@ -2,6 +2,7 @@ export interface Habit {
   id: string
   name: string
   completedDays: Record<string, boolean>
+  failedDays: Record<string, boolean> // Track failed days
   color?: string
   icon?: string
   createdAt: string
@@ -29,12 +30,15 @@ export interface Task {
   title: string
   description?: string
   completed: boolean
+  failed: boolean
   dueDate: string
   priority: "high" | "medium" | "low" | "optional"
-  status: "not-started" | "in-progress" | "completed"
+  status: "not-started" | "in-progress" | "completed" | "failed"
   category: string
   createdAt: string
   completedAt?: string
+  failedAt?: string
+  failureReason?: string
   pomodorosSpent: number
   estimatedPomodoros: number
   // Timed event support
@@ -87,7 +91,14 @@ export interface DailyThought {
   id: number
   text: string
   author?: string
-  category: "motivation" | "productivity" | "mindfulness" | "success" | "wisdom" | "happiness" | "growth" | "focus"
+  category: "motivation" | "productivity" | "mindfulness" | "success" | "wisdom" | "happiness" | "growth" | "focus" | "resilience" | "discipline" | "gratitude" | "courage"
+  powerLevel?: number // 1-10 rating of impact
+}
+
+export interface ThoughtHistory {
+  viewedThoughtIds: number[]
+  lastResetDate: string
+  currentThought: number
 }
 
 export interface PomodoroSettings {
@@ -143,32 +154,26 @@ export const DEFAULT_HABITS = [
   { name: "English", icon: "🇬🇧" },
 ]
 
-export const HABIT_ICONS = [
-  "⏰",
-  "🚫",
-  "🚿",
-  "📱",
-  "💵",
-  "🏋️",
-  "📖",
-  "🇬🇧",
-  "🧘",
-  "💧",
-  "🥗",
-  "🏃",
-  "💤",
-  "📝",
-  "🎯",
-  "🧠",
-  "☕",
-  "🌅",
-  "🌙",
-  "💊",
-  "🎵",
-  "🎨",
-  "🌿",
-  "🔥",
-]
+export const HABIT_ICONS_CATEGORIZED = {
+  "Time & Schedule": ["⏰", "⏱️", "🕐", "🌅", "🌙", "🌄", "⛅"],
+  "Fitness & Health": ["🏋️", "🏃", "🚴", "🤸", "🧘", "💪", "❤️", "🫀", "🩺", "💊", "🥗", "🥦", "🍎", "🥤", "💧"],
+  "Hygiene & Self-Care": ["🚿", "🛁", "🪥", "🧴", "💆", "🧖", "💅"],
+  "Learning & Education": ["📖", "📚", "✍️", "📝", "🎓", "🧠", "💡", "🔬", "🔭", "📊", "📈"],
+  "Languages": ["🇬🇧", "🇪🇸", "🇫🇷", "🇩🇪", "🇮🇹", "🇯🇵", "🇰🇷", "🇨🇳", "🗣️", "💬"],
+  "Work & Productivity": ["💼", "💻", "⌨️", "🖥️", "📱", "🎯", "✅", "📋", "📌", "🔨", "⚙️"],
+  "Finance & Money": ["💵", "💰", "💸", "💳", "🏦", "📈", "💹", "🪙"],
+  "Food & Nutrition": ["🍳", "🥘", "🍱", "🥙", "🥗", "🍲", "☕", "🫖", "🧃"],
+  "Mindfulness & Spirituality": ["🧘‍♀️", "🧘‍♂️", "🕉️", "☮️", "🙏", "💫", "✨", "⭐", "🌟"],
+  "Hobbies & Creativity": ["🎨", "🎭", "🎪", "🎬", "📷", "🎵", "🎸", "🎹", "🎤", "🎧", "✏️", "🖌️", "🖍️"],
+  "Nature & Environment": ["🌿", "🌱", "🌳", "🌲", "🌴", "🌻", "🌺", "🌸", "🌼", "🍀", "🌾"],
+  "Social & Relationships": ["👥", "👨‍👩‍👧‍👦", "💑", "🤝", "👫", "📞", "💌", "🎁"],
+  "Habits & Goals": ["🔥", "⚡", "🎖️", "🏆", "🥇", "🥈", "🥉", "🎗️", "👑"],
+  "Avoidance & Restrictions": ["🚫", "⛔", "🙅", "❌", "🚭", "🍺", "🍷", "🍹"],
+  "Miscellaneous": ["😊", "😌", "🤗", "🎈", "🎉", "🎊", "🧩", "🎲", "🏡", "🛏️", "🧹", "🧺"],
+}
+
+export const HABIT_ICONS = Object.values(HABIT_ICONS_CATEGORIZED).flat()
+
 
 export interface Achievement {
   id: string

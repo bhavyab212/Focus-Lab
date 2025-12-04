@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, ListTodo, Moon, Sun, Sparkles, Settings, Download, Upload } from "lucide-react"
+import { Calendar, ListTodo, Moon, Sun, Sparkles, Settings, Download, Upload, Timer, BarChart3 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WeeklyPlanner } from "@/components/weekly-planner/weekly-planner"
-import { TaskTracker } from "@/components/task-tracker/task-tracker"
+import { HabitTrackerPage } from "@/components/habit-tracker/habit-tracker-page"
+import { FocusToolsPage } from "@/components/focus-tools/focus-tools-page"
+import { AnalyticsPage } from "@/components/analytics/analytics-page"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -18,10 +20,10 @@ import { exportData, importData } from "@/lib/data-manager"
 import type { Habit } from "@/lib/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 
-type View = "weekly" | "tasks"
+type View = "habits" | "tasks" | "focus" | "analytics"
 
 export default function Home() {
-  const [currentView, setCurrentView] = useState<View>("weekly")
+  const [currentView, setCurrentView] = useState<View>("habits")
   const [isDark, setIsDark] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [habits] = useLocalStorage<Habit[]>("focuslab-habits", [])
@@ -86,30 +88,52 @@ export default function Home() {
             {/* View Tabs */}
             <div className="flex items-center bg-muted rounded-lg p-1">
               <button
-                onClick={() => setCurrentView("weekly")}
+                onClick={() => setCurrentView("habits")}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
-                  currentView === "weekly"
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
+                  currentView === "habits"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Calendar className="w-4 h-4" />
-                <span className="hidden sm:inline">Weekly Planner</span>
-                <span className="sm:hidden">Weekly</span>
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Habits</span>
               </button>
               <button
                 onClick={() => setCurrentView("tasks")}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
                   currentView === "tasks"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <ListTodo className="w-4 h-4" />
-                <span className="hidden sm:inline">Task Tracker</span>
-                <span className="sm:hidden">Tasks</span>
+                <span className="hidden sm:inline">Tasks</span>
+              </button>
+              <button
+                onClick={() => setCurrentView("focus")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
+                  currentView === "focus"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Timer className="w-4 h-4" />
+                <span className="hidden sm:inline">Focus</span>
+              </button>
+              <button
+                onClick={() => setCurrentView("analytics")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
+                  currentView === "analytics"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Analytics</span>
               </button>
             </div>
 
@@ -188,8 +212,10 @@ export default function Home() {
 
       {/* Main Content */}
       <main>
-        {currentView === "weekly" && <WeeklyPlanner />}
-        {currentView === "tasks" && <TaskTracker />}
+        {currentView === "habits" && <HabitTrackerPage />}
+        {currentView === "tasks" && <WeeklyPlanner />}
+        {currentView === "focus" && <FocusToolsPage />}
+        {currentView === "analytics" && <AnalyticsPage />}
       </main>
     </div>
   )

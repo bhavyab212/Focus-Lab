@@ -82,10 +82,10 @@ export function TaskTracker() {
       prev.map((t) =>
         t.id === taskId
           ? {
-              ...t,
-              ...updates,
-              completedAt: updates.completed ? new Date().toISOString() : undefined,
-            }
+            ...t,
+            ...updates,
+            completedAt: updates.completed ? new Date().toISOString() : undefined,
+          }
           : t,
       ),
     )
@@ -93,6 +93,10 @@ export function TaskTracker() {
 
   const removeTask = (taskId: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== taskId))
+  }
+
+  const reorderTasks = (newTasks: Task[]) => {
+    setTasks(newTasks)
   }
 
   const clearCompleted = () => {
@@ -260,6 +264,7 @@ export function TaskTracker() {
           tasks={filteredTasks}
           onUpdateTask={updateTask}
           onRemoveTask={removeTask}
+          onReorderTasks={reorderTasks}
           totalCount={tasks.length}
           filteredCount={filteredTasks.length}
         />
