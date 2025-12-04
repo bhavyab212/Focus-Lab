@@ -144,14 +144,14 @@ export const CATEGORIES = [
 ]
 
 export const DEFAULT_HABITS = [
-  { name: "Wake up at 06:00", icon: "⏰" },
-  { name: "No alcohol", icon: "🚫" },
-  { name: "Cold shower", icon: "🚿" },
-  { name: "1 hour on social media", icon: "📱" },
-  { name: "Budget tracking", icon: "💵" },
-  { name: "Gym", icon: "🏋️" },
-  { name: "Reading", icon: "📖" },
-  { name: "English", icon: "🇬🇧" },
+  { name: "Wake up early", icon: "⏰" },
+  { name: "Review lecture notes", icon: "📝" },
+  { name: "Complete assignments", icon: "📚" },
+  { name: "Study for 2 hours", icon: "⏱️" },
+  { name: "Drink water", icon: "💧" },
+  { name: "Exercise", icon: "🏃" },
+  { name: "Read textbook", icon: "📖" },
+  { name: "Sleep 8 hours", icon: "😴" },
 ]
 
 export const HABIT_ICONS_CATEGORIZED = {
