@@ -42,6 +42,7 @@ import { type Habit, DAYS_OF_WEEK, DEFAULT_HABITS, HABIT_ICONS, HABIT_ICONS_CATE
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { Confetti } from "@/components/ui/confetti"
 import { HabitAnalytics } from "./habit-analytics"
+import { HabitProgressGraph } from "./habit-progress-graph"
 import {
   DndContext,
   closestCenter,
@@ -85,6 +86,7 @@ function SortableHabitItem({ id, children }: { id: string; children: (listeners:
 }
 
 export function HabitTracker({ weekDates }: HabitTrackerProps) {
+  const [graphView, setGraphView] = useState<"week" | "month">("week")
   const [habits, setHabits, isLoaded] = useLocalStorage<Habit[]>(
     "focuslab-habits",
     DEFAULT_HABITS.map((h) => ({
@@ -746,6 +748,13 @@ export function HabitTracker({ weekDates }: HabitTrackerProps) {
           </CollapsibleContent>
         </motion.div>
       </Collapsible>
+
+      <HabitProgressGraph
+        habits={habits}
+        view={graphView}
+        onViewChange={setGraphView}
+        currentDate={weekDates[0] || new Date()}
+      />
     </>
   )
 }
