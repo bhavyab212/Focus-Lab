@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, ListTodo, Moon, Sun, Sparkles, Settings, Download, Upload, Timer, BarChart3 } from "lucide-react"
+import { Calendar, ListTodo, Moon, Sun, Sparkles, Settings, Download, Upload, Timer, BarChart3, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { WeeklyPlanner } from "@/components/weekly-planner/weekly-planner"
 import { HabitTrackerPage } from "@/components/habit-tracker/habit-tracker-page"
@@ -19,6 +19,16 @@ import { AchievementSystem } from "@/components/gamification/achievement-system"
 import { exportData, importData } from "@/lib/data-manager"
 import type { Habit } from "@/lib/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type View = "habits" | "tasks" | "focus" | "analytics"
 
@@ -26,6 +36,7 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<View>("habits")
   const [isDark, setIsDark] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const [habits] = useLocalStorage<Habit[]>("focuslab-habits", [])
 
   useEffect(() => {
@@ -55,6 +66,16 @@ export default function Home() {
       }
       return newValue
     })
+  }
+
+  const handleResetData = () => {
+    localStorage.removeItem("focuslab-habits")
+    localStorage.removeItem("focuslab-tasks")
+    localStorage.removeItem("focuslab-achievements")
+    localStorage.removeItem("pomodoro-settings-v2")
+    // Keep theme preference
+    // localStorage.removeItem("focuslab-theme") 
+    window.location.reload()
   }
 
   if (!mounted) {
@@ -203,8 +224,33 @@ export default function Home() {
                     <Upload className="w-4 h-4 mr-2" />
                     Import Data
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setResetDialogOpen(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Reset Data
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete all your habits, tasks, and progress data from this device.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleResetData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Reset Everything
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>
