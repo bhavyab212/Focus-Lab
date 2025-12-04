@@ -254,7 +254,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </nav>
+      </nav >
 
       {/* Main Content */}
       <main>
@@ -262,12 +262,12 @@ export default function Home() {
         {currentView === "tasks" && <WeeklyPlanner />}
         {currentView === "focus" && <FocusToolsPage />}
         {currentView === "analytics" && <AnalyticsPage />}
-      </main>
+      </main >
 
       {/* Footer */}
-      <footer className="py-8 text-center text-sm text-muted-foreground/60 font-medium tracking-wide">
+      < footer className="py-8 text-center text-sm text-muted-foreground/60 font-medium tracking-wide" >
         Made with ♥ by B2
-      </footer>
-    </div>
+      </footer >
+    </div >
   )
 }
