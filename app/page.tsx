@@ -263,6 +263,11 @@ export default function Home() {
         {currentView === "focus" && <FocusToolsPage />}
         {currentView === "analytics" && <AnalyticsPage />}
       </main>
+
+      {/* Footer */}
+      <footer className="py-8 text-center text-sm text-muted-foreground/60 font-medium tracking-wide">
+        Made with ♥ by B2
+      </footer>
     </div>
   )
 }
