@@ -183,5 +183,5 @@ We are constantly improving Focus Lab. Here's what's coming next:
     Navigate to `http://localhost:3000`
 
 ---
-
-Made with ♥ by B2
+Built with ❤️ for productivity enthusiasts.
+ Made with ❤️ by B2
