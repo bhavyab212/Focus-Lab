@@ -177,7 +177,7 @@ export function PomodoroTimer() {
                             animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                             exit={{ opacity: 0, scale: 0.9, rotateY: -90 }}
                             transition={{ duration: 0.4, ease: "easeOut" }}
-                            className="w-[380px] h-[480px] rounded-[40px] bg-white/30 dark:bg-black/40 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-2xl flex flex-col items-center justify-between p-8 text-slate-800 dark:text-white relative overflow-hidden transition-colors duration-500"
+                            className="w-[340px] h-[440px] rounded-[40px] bg-white/30 dark:bg-black/40 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-2xl flex flex-col items-center justify-between p-6 text-slate-800 dark:text-white relative overflow-hidden transition-colors duration-500"
                         >
                             {/* Progress Ring */}
                             <div className="relative mt-4">
@@ -308,7 +308,7 @@ export function PomodoroTimer() {
                             animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                             exit={{ opacity: 0, scale: 0.9, rotateY: -90 }}
                             transition={{ duration: 0.4, ease: "easeOut" }}
-                            className="w-[380px] h-[480px] rounded-[40px] bg-white/40 dark:bg-black/60 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-2xl flex flex-col p-8 text-slate-800 dark:text-white relative overflow-hidden transition-colors duration-500"
+                            className="w-[340px] h-[440px] rounded-[40px] bg-white/40 dark:bg-black/60 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-2xl flex flex-col p-6 text-slate-800 dark:text-white relative overflow-hidden transition-colors duration-500"
                         >
                             {/* Header */}
                             <div className="flex items-center gap-4 mb-8">
