@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Coffee, Eye, Droplet, Dumbbell, X } from "lucide-react"
+import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { useLocalStorage } from "@/hooks/use-local-storage"
+import { cn } from "@/lib/utils"
 
 interface BreakSettings {
     enabled: boolean
@@ -19,6 +21,7 @@ interface BreakSettings {
 }
 
 export function BreakReminder() {
+    const { resolvedTheme } = useTheme()
     const [settings, setSettings] = useLocalStorage<BreakSettings>("break-settings", {
         enabled: true,
         interval: 60,
@@ -103,25 +106,45 @@ export function BreakReminder() {
     const { icon, title, description, tips } = getReminderContent()
 
     return (
-        <div className="min-h-screen bg-background p-6">
-            <div className="max-w-4xl mx-auto space-y-8">
-                <div>
-                    <h1 className="text-3xl font-bold flex items-center gap-3">
+        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden font-sans p-6">
+            {/* Background Image */}
+            <div
+                className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
+                style={{
+                    backgroundImage: resolvedTheme === "dark"
+                        ? "url('/night-landscape.png')"
+                        : "url('https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070&auto=format&fit=crop')",
+                }}
+            >
+                <div className={cn(
+                    "absolute inset-0 transition-colors duration-1000",
+                    resolvedTheme === "dark" ? "bg-black/40" : "bg-black/20"
+                )} />
+                <div className="absolute inset-0 backdrop-blur-[2px]" />
+            </div>
+
+            <div className="relative z-10 max-w-4xl w-full space-y-8">
+                <div className="text-center text-white">
+                    <h1 className="text-3xl font-bold flex items-center justify-center gap-3">
                         <Coffee className="w-8 h-8" />
                         Break Reminder
                     </h1>
-                    <p className="text-muted-foreground mt-1">
+                    <p className="text-white/80 mt-1">
                         Stay healthy with regular breaks and reminders
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Settings */}
-                    <Card className="p-6">
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="rounded-[30px] bg-white/30 dark:bg-black/40 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-2xl p-6 text-slate-800 dark:text-white"
+                    >
                         <h2 className="text-xl font-semibold mb-6">Settings</h2>
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="enabled">Enable Reminders</Label>
+                                <Label htmlFor="enabled" className="text-base">Enable Reminders</Label>
                                 <Switch
                                     id="enabled"
                                     checked={settings.enabled}
@@ -131,8 +154,8 @@ export function BreakReminder() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label>Break Interval: {settings.interval} minutes</Label>
+                            <div className="space-y-4">
+                                <Label className="text-base">Break Interval: {settings.interval} minutes</Label>
                                 <Slider
                                     value={[settings.interval]}
                                     onValueChange={([value]) =>
@@ -142,10 +165,11 @@ export function BreakReminder() {
                                     max={120}
                                     step={5}
                                     disabled={!settings.enabled}
+                                    className="py-4"
                                 />
                             </div>
 
-                            <div className="space-y-4 pt-4 border-t">
+                            <div className="space-y-4 pt-4 border-t border-white/20">
                                 <h3 className="font-medium">Reminder Types</h3>
 
                                 <div className="flex items-center justify-between">
@@ -194,14 +218,18 @@ export function BreakReminder() {
                                 </div>
                             </div>
                         </div>
-                    </Card>
+                    </motion.div>
 
                     {/* Timer Display */}
-                    <Card className="p-6 flex items-center justify-center">
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="rounded-[30px] bg-white/30 dark:bg-black/40 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-2xl p-6 flex items-center justify-center text-slate-800 dark:text-white"
+                    >
                         <div className="text-center space-y-4">
-                            <div className="text-sm text-muted-foreground">Next Break In</div>
+                            <div className="text-sm font-medium uppercase tracking-wider opacity-70">Next Break In</div>
                             <motion.div
-                                className="text-6xl font-bold text-primary tabular-nums"
+                                className="text-7xl font-light tracking-tight tabular-nums"
                                 animate={{
                                     scale: timeUntilBreak < 60 ? [1, 1.1, 1] : 1,
                                 }}
@@ -212,11 +240,11 @@ export function BreakReminder() {
                             >
                                 {formatTime(timeUntilBreak)}
                             </motion.div>
-                            <p className="text-muted-foreground">
+                            <p className="text-sm opacity-70">
                                 {settings.enabled ? "Reminders active" : "Reminders paused"}
                             </p>
                         </div>
-                    </Card>
+                    </motion.div>
                 </div>
 
                 {/* Reminder Modal */}
@@ -226,14 +254,14 @@ export function BreakReminder() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                             onClick={() => setShowReminder(false)}
                         >
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.9, opacity: 0 }}
-                                className="bg-card border rounded-2xl p-8 max-w-md w-full shadow-2xl"
+                                className="rounded-[30px] bg-white/90 dark:bg-black/90 backdrop-blur-2xl border border-white/20 p-8 max-w-md w-full shadow-2xl"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <div className="flex justify-between items-start mb-6">
@@ -264,7 +292,7 @@ export function BreakReminder() {
 
                                 <Button
                                     onClick={() => setShowReminder(false)}
-                                    className="w-full"
+                                    className="w-full rounded-full"
                                     size="lg"
                                 >
                                     Got it, thanks!
