@@ -184,4 +184,6 @@ We are constantly improving Focus Lab. Here's what's coming next:
 
 ---
 Built with ❤️ for productivity enthusiasts.
+
+ 
  Made with ❤️ by B2
