@@ -63,14 +63,13 @@ export function PomodoroTimer() {
 
     // Initialize timer when settings change or mode changes
     useEffect(() => {
-        if (!isActive) {
-            const duration =
-                mode === "focus" ? settings.focusDuration :
-                    mode === "break" ? settings.breakDuration :
-                        settings.restDuration
-            setTimeLeft(duration * 60)
-        }
-    }, [settings, mode, isActive])
+        const duration =
+            mode === "focus" ? settings.focusDuration :
+                mode === "break" ? settings.breakDuration :
+                    settings.restDuration
+        setTimeLeft(duration * 60)
+        setIsActive(false)
+    }, [settings, mode])
 
     // Timer Logic
     useEffect(() => {
@@ -223,11 +222,24 @@ export function PomodoroTimer() {
                                     <span className="text-xs font-medium tracking-[0.2em] text-slate-600 dark:text-white/60 uppercase mb-2 transition-colors duration-500">
                                         {mode}
                                     </span>
+
+                                    {/* Wave Effect Background */}
+                                    {isActive && (
+                                        <motion.div
+                                            key={timeLeft}
+                                            initial={{ scale: 0.8, opacity: 0.5 }}
+                                            animate={{ scale: 1.5, opacity: 0 }}
+                                            transition={{ duration: 1, ease: "easeOut" }}
+                                            className="absolute w-32 h-32 rounded-full bg-teal-400/20 z-[-1]"
+                                        />
+                                    )}
+
                                     <motion.span
                                         key={timeLeft}
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        className="text-5xl font-light tracking-tight tabular-nums text-slate-900 dark:text-white transition-colors duration-500"
+                                        initial={{ scale: 1 }}
+                                        animate={isActive ? { scale: [1, 1.1, 1] } : { scale: 1 }}
+                                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        className="text-5xl font-light tracking-tight tabular-nums text-slate-900 dark:text-white transition-colors duration-500 relative z-10"
                                     >
                                         {formatTime(timeLeft)}
                                     </motion.span>
@@ -251,36 +263,42 @@ export function PomodoroTimer() {
 
                             {/* Controls */}
                             <div className="w-full flex items-center justify-between px-4 mb-2">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={resetTimer}
-                                    className="text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full w-12 h-12 transition-colors duration-500"
-                                >
-                                    <RotateCcw className="w-5 h-5" />
-                                </Button>
+                                <motion.div whileTap={{ scale: 0.9 }}>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={resetTimer}
+                                        className="text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full w-12 h-12 transition-colors duration-500"
+                                    >
+                                        <RotateCcw className="w-5 h-5" />
+                                    </Button>
+                                </motion.div>
 
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={toggleTimer}
-                                    className="text-slate-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full w-16 h-16 transition-colors duration-500"
-                                >
-                                    {isActive ? (
-                                        <Pause className="w-8 h-8 fill-current" />
-                                    ) : (
-                                        <Play className="w-8 h-8 fill-current pl-1" />
-                                    )}
-                                </Button>
+                                <motion.div whileTap={{ scale: 0.9 }}>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={toggleTimer}
+                                        className="text-slate-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full w-16 h-16 transition-colors duration-500"
+                                    >
+                                        {isActive ? (
+                                            <Pause className="w-8 h-8 fill-current" />
+                                        ) : (
+                                            <Play className="w-8 h-8 fill-current pl-1" />
+                                        )}
+                                    </Button>
+                                </motion.div>
 
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setShowSettings(true)}
-                                    className="text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full w-12 h-12 transition-colors duration-500"
-                                >
-                                    <Settings className="w-6 h-6" />
-                                </Button>
+                                <motion.div whileTap={{ scale: 0.9 }}>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setShowSettings(true)}
+                                        className="text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full w-12 h-12 transition-colors duration-500"
+                                    >
+                                        <Settings className="w-6 h-6" />
+                                    </Button>
+                                </motion.div>
                             </div>
                         </motion.div>
                     ) : (
@@ -294,14 +312,16 @@ export function PomodoroTimer() {
                         >
                             {/* Header */}
                             <div className="flex items-center gap-4 mb-8">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setShowSettings(false)}
-                                    className="text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full -ml-2 transition-colors duration-500"
-                                >
-                                    <ArrowLeft className="w-6 h-6" />
-                                </Button>
+                                <motion.div whileTap={{ scale: 0.9 }}>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setShowSettings(false)}
+                                        className="text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full -ml-2 transition-colors duration-500"
+                                    >
+                                        <ArrowLeft className="w-6 h-6" />
+                                    </Button>
+                                </motion.div>
                                 <span className="text-lg font-medium">Settings</span>
                             </div>
 
@@ -313,22 +333,26 @@ export function PomodoroTimer() {
                                         <div className="text-2xl font-light">{settings.focusDuration} min</div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
-                                            onClick={() => setSettings(s => ({ ...s, focusDuration: Math.max(1, s.focusDuration - 5) }))}
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
-                                            onClick={() => setSettings(s => ({ ...s, focusDuration: Math.min(60, s.focusDuration + 5) }))}
-                                        >
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Button>
+                                        <motion.div whileTap={{ scale: 0.9 }}>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
+                                                onClick={() => setSettings(s => ({ ...s, focusDuration: Math.max(1, s.focusDuration - 5) }))}
+                                            >
+                                                <ChevronLeft className="w-4 h-4" />
+                                            </Button>
+                                        </motion.div>
+                                        <motion.div whileTap={{ scale: 0.9 }}>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
+                                                onClick={() => setSettings(s => ({ ...s, focusDuration: Math.min(60, s.focusDuration + 5) }))}
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Button>
+                                        </motion.div>
                                     </div>
                                 </div>
 
@@ -338,22 +362,26 @@ export function PomodoroTimer() {
                                         <div className="text-2xl font-light">{settings.breakDuration} min</div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
-                                            onClick={() => setSettings(s => ({ ...s, breakDuration: Math.max(1, s.breakDuration - 1) }))}
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
-                                            onClick={() => setSettings(s => ({ ...s, breakDuration: Math.min(15, s.breakDuration + 1) }))}
-                                        >
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Button>
+                                        <motion.div whileTap={{ scale: 0.9 }}>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
+                                                onClick={() => setSettings(s => ({ ...s, breakDuration: Math.max(1, s.breakDuration - 1) }))}
+                                            >
+                                                <ChevronLeft className="w-4 h-4" />
+                                            </Button>
+                                        </motion.div>
+                                        <motion.div whileTap={{ scale: 0.9 }}>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
+                                                onClick={() => setSettings(s => ({ ...s, breakDuration: Math.min(15, s.breakDuration + 1) }))}
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Button>
+                                        </motion.div>
                                     </div>
                                 </div>
 
@@ -363,22 +391,26 @@ export function PomodoroTimer() {
                                         <div className="text-2xl font-light">{settings.restDuration} min</div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
-                                            onClick={() => setSettings(s => ({ ...s, restDuration: Math.max(5, s.restDuration - 5) }))}
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
-                                            onClick={() => setSettings(s => ({ ...s, restDuration: Math.min(60, s.restDuration + 5) }))}
-                                        >
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Button>
+                                        <motion.div whileTap={{ scale: 0.9 }}>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
+                                                onClick={() => setSettings(s => ({ ...s, restDuration: Math.max(5, s.restDuration - 5) }))}
+                                            >
+                                                <ChevronLeft className="w-4 h-4" />
+                                            </Button>
+                                        </motion.div>
+                                        <motion.div whileTap={{ scale: 0.9 }}>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-500"
+                                                onClick={() => setSettings(s => ({ ...s, restDuration: Math.min(60, s.restDuration + 5) }))}
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Button>
+                                        </motion.div>
                                     </div>
                                 </div>
 
