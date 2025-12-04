@@ -223,9 +223,14 @@ export function PomodoroTimer() {
                                     <span className="text-xs font-medium tracking-[0.2em] text-slate-600 dark:text-white/60 uppercase mb-2 transition-colors duration-500">
                                         {mode}
                                     </span>
-                                    <span className="text-5xl font-light tracking-tight tabular-nums text-slate-900 dark:text-white transition-colors duration-500">
+                                    <motion.span
+                                        key={timeLeft}
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        className="text-5xl font-light tracking-tight tabular-nums text-slate-900 dark:text-white transition-colors duration-500"
+                                    >
                                         {formatTime(timeLeft)}
-                                    </span>
+                                    </motion.span>
 
                                     {/* Session Dots */}
                                     <div className="flex gap-2 mt-6">
