@@ -29,7 +29,11 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  generator: 'v0.app'
+  generator: 'v0.app',
+  icons: {
+    icon: '/favicon.jpg',
+    apple: '/favicon.jpg',
+  },
 }
 
 export const viewport: Viewport = {
@@ -50,11 +54,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="apple-touch-icon" href="/icon-192.jpg" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-      </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`} suppressHydrationWarning>{children}</body>
     </html>
   )

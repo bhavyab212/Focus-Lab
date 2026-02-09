@@ -94,16 +94,26 @@ export default function Home() {
       {/* Top Navigation */}
       <nav className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-[1800px] mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
+          <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-lg leading-tight">FocusLab</span>
-                <span className="text-[10px] text-muted-foreground leading-none">Habit Tracker & Planner</span>
-              </div>
+            <div className="flex items-center">
+              <img
+                src="/logo-full.png"
+                alt="FocusLab Logo"
+                className="h-16 w-auto object-contain"
+                style={{
+                  filter: `
+                    drop-shadow(0.3px 0 0 black)
+                    drop-shadow(-0.3px 0 0 black)
+                    drop-shadow(0 0.3px 0 black)
+                    drop-shadow(0 -0.3px 0 black)
+                    drop-shadow(0.3px 0.3px 0 black)
+                    drop-shadow(-0.3px 0.3px 0 black)
+                    drop-shadow(0.3px -0.3px 0 black)
+                    drop-shadow(-0.3px -0.3px 0 black)
+                  `
+                }}
+              />
             </div>
 
             {/* View Tabs */}
